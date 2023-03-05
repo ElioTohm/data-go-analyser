@@ -1,0 +1,5 @@
+package Sender
+
+func StoreData() {
+
+}
