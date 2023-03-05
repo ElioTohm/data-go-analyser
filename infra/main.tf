@@ -1,6 +1,6 @@
 locals {
   name = "elio-s3-test"
-  ecr_image_tag = "0.0.7"
+  ecr_image_tag = "0.0.8"
   tags = {
     Environment = "test"
   }
@@ -62,7 +62,7 @@ module "lambda_function" {
         },
         {
           "Effect": "Allow",
-          "Action": "s3:GetObject",
+          "Action": "s3:*",
           "Resource": [
             "${aws_s3_bucket.bucket.arn}/*",
             "${aws_s3_bucket.parquet_bucket.arn}/*"
