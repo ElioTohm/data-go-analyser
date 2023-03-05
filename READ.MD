@@ -3,7 +3,16 @@
 ### Infrastructure
 #
 simple solution utilizing s3+lambda trigger
-upon upload on the file it will trigger the lambda function which will process the data save it as parquet file in a seperate bucket and send the json formated svc as a message in sqs
+upon upload on the file it will trigger the lambda function which will process the data save it as parquet file in a seperate bucket and send the json formated svc as a message in sqs  
+
+to create the full stack simply run the following command under `infra` directory
+```
+terraform apply
+```
+and the following command to destroy the environment (but first you need to make sure that the s3 buckets are empty)
+```
+terraform destroy
+```
 
 ### Listen to S3 events
 #
