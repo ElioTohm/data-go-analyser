@@ -11,7 +11,9 @@ the infra is setup to trigger a lambda function on upload
 
 #### Process the information
 #
-the information is read from the s3 file transformed into a `struct`
+the information is read from the s3 file transformed into a `struct`  
+*currently does not handle errors*
+
 ### Send to queue
 #
 the processed data is than sent to the queue created for later processing
