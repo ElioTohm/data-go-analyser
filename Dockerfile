@@ -1,10 +1,10 @@
-FROM golang:1.19 as builder
+FROM golang:1.16 as builder
 WORKDIR /workspace
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o ./app
+RUN go build -o ./app
 
 FROM public.ecr.aws/lambda/go:latest
 # Copy function code

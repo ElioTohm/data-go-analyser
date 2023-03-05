@@ -2,16 +2,17 @@ package main
 
 import (
 	"context"
+	permanentdata "data-go-analyser/PermanentData"
 	"data-go-analyser/Reader"
 	"data-go-analyser/Sender"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/ztrue/tracerr"
 )
 
@@ -21,6 +22,7 @@ func main() {
 
 func Handler(ctx context.Context, s3Event events.S3Event) (string, error) {
 	sdkConfig, err := config.LoadDefaultConfig(context.TODO())
+	parquetBucketName := os.Getenv("PARQUET_BUCKET_NAME")
 	if err != nil {
 		fmt.Println("Couldn't load default configuration. Have you set up your AWS account?")
 		tracerr.PrintSourceColor(err)
@@ -42,7 +44,10 @@ func Handler(ctx context.Context, s3Event events.S3Event) (string, error) {
 		// analyse the struct and return useful data
 		analysedData := Reader.AnalyseData(constructedData)
 
-		Sender.SendSuccessMessage(sqsClient, aws.String("elio-s3-test"), Sender.TransformMessageToSQSMessage(analysedData))
+		Sender.SendSuccessMessage(sqsClient, &s3.Bucket.Name, Sender.TransformMessageToSQSMessage(constructedData))
+
+		permanentdata.SaveProcessedData(analysedData, parquetBucketName, s3.Object.Key)
+
 	}
 	return "200", nil
 }

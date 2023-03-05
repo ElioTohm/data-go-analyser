@@ -1,4 +1,4 @@
-package Reader
+package data
 
 import (
 	"strconv"

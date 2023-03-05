@@ -2,10 +2,14 @@ package Sender
 
 import (
 	"context"
+	"data-go-analyser/data"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/aws/aws-sdk-go/aws"
 )
 
 type SQSSendMessageAPI interface {
@@ -58,5 +62,26 @@ func SendSuccessMessage(sqsClient *sqs.Client, queueName *string, messages []typ
 		fmt.Println(err)
 		return
 	}
+}
 
+func TransformMessageToSQSMessage(messages []*data.Customer) (sqsMessage []types.SendMessageBatchRequestEntry) {
+	for _, message := range messages {
+		messageID := message.CustomerReference + time.Now().Format("20060102150405")
+		messageJson, err := json.Marshal(message)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		sqsMessage = append(sqsMessage, types.SendMessageBatchRequestEntry{
+			Id: &messageID,
+			MessageAttributes: map[string]types.MessageAttributeValue{
+				"customer_reference": {
+					DataType:    aws.String("String"),
+					StringValue: &message.CustomerReference,
+				},
+			},
+			MessageBody: aws.String(string(messageJson)),
+		})
+	}
+	return sqsMessage
 }

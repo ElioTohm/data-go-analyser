@@ -3,7 +3,7 @@ package Reader
 import (
 	"bufio"
 	"context"
-	"data-go-analyser/Sender"
+	"data-go-analyser/data"
 	"io"
 	"strings"
 
@@ -22,7 +22,7 @@ func DownloadFile(s3Client *s3.Client, bucketName string, objectKey string) (io.
 	return getObjectOutput.Body, err
 }
 
-func ReadFile(readFile io.Reader) (customers []*Customer, orders []*Order, items []*Item) {
+func ReadFile(readFile io.Reader) (customers []*data.Customer, orders []*data.Order, items []*data.Item) {
 	fileScanner := bufio.NewScanner(readFile)
 	flag := 0
 
@@ -33,15 +33,15 @@ func ReadFile(readFile io.Reader) (customers []*Customer, orders []*Order, items
 		line := strings.Split(fileScanner.Text(), ",")
 		if line[0] != "id" {
 			if flag == 1 {
-				customers = append(customers, ParseCustomer(line))
+				customers = append(customers, data.ParseCustomer(line))
 				continue
 			}
 			if flag == 2 {
-				orders = append(orders, ParseOrders(line))
+				orders = append(orders, data.ParseOrders(line))
 				continue
 			}
 			if flag == 3 {
-				items = append(items, ParseItems(line))
+				items = append(items, data.ParseItems(line))
 				continue
 			}
 			continue
@@ -51,7 +51,7 @@ func ReadFile(readFile io.Reader) (customers []*Customer, orders []*Order, items
 	return customers, orders, items
 }
 
-func ConstructData(customers []*Customer, orders []*Order, items []*Item) ([]*Customer, []*Sender.ErrorMessage) {
+func ConstructData(customers []*data.Customer, orders []*data.Order, items []*data.Item) ([]*data.Customer, []*data.ErrorMessage) {
 	// link Items to Orders
 	for _, item := range items {
 		for _, order := range orders {
@@ -64,7 +64,7 @@ func ConstructData(customers []*Customer, orders []*Order, items []*Item) ([]*Cu
 	for _, order := range orders {
 		for _, customer := range customers {
 			if customer.Orders == nil {
-				customer.Orders = make(map[string]*Order)
+				customer.Orders = make(map[string]*data.Order)
 			}
 			if customer.CustomerReference == order.CustomerReference {
 				customer.Orders[order.OrderReference] = order
@@ -74,18 +74,18 @@ func ConstructData(customers []*Customer, orders []*Order, items []*Item) ([]*Cu
 	return customers, nil
 }
 
-func AnalyseData(customers []*Customer) (messages []*Sender.Message) {
+func AnalyseData(customers []*data.Customer) (processedData []data.ProcessedData) {
 	for customer_reference, customer := range customers {
-		messages = append(messages, &Sender.Message{
-			Type:              "custimer_message",
+		processedData = append(processedData, data.ProcessedData{
+			Type:              "customer_message",
 			CustomerReference: customer.CustomerReference,
-			NumberOfOrders:    len(customer.Orders),
+			NumberOfOrders:    int32(len(customer.Orders)),
 		})
 		for _, order := range customer.Orders {
 			for _, item := range order.Items {
-				messages[customer_reference].TotalAmountSpent = messages[customer_reference].TotalAmountSpent + item.TotalPrice
+				processedData[customer_reference].TotalAmountSpent = processedData[customer_reference].TotalAmountSpent + item.TotalPrice
 			}
 		}
 	}
-	return messages
+	return processedData
 }

@@ -1,6 +1,6 @@
 locals {
   name = "elio-s3-test"
-  ecr_image_tag = "0.0.6"
+  ecr_image_tag = "0.0.7"
   tags = {
     Environment = "test"
   }
@@ -63,12 +63,17 @@ module "lambda_function" {
         {
           "Effect": "Allow",
           "Action": "s3:GetObject",
-          "Resource": "${aws_s3_bucket.bucket.arn}/*"
-          
+          "Resource": [
+            "${aws_s3_bucket.bucket.arn}/*",
+            "${aws_s3_bucket.parquet_bucket.arn}/*"
+          ]
         }
       ]
     }
   EOT
+  environment_variables = {
+    PARQUET_BUCKET_NAME = "${local.name}-parquet"
+  }
 
 }
 
@@ -93,7 +98,9 @@ resource "aws_cloudwatch_event_rule" "scan_ami" {
 resource "aws_s3_bucket" "bucket" {
   bucket = local.name
 }
-
+resource "aws_s3_bucket" "parquet_bucket" {
+  bucket = "${local.name}-parquet"
+}
 resource "aws_lambda_permission" "allow_bucket" {
   statement_id  = "AllowExecutionFromS3Bucket"
   action        = "lambda:InvokeFunction"
@@ -118,6 +125,5 @@ resource "aws_sqs_queue" "queue" {
   max_message_size          = 2048
   message_retention_seconds = 86400
   receive_wait_time_seconds = 10
-
   tags = local.tags
 }
